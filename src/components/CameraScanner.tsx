@@ -10,7 +10,14 @@ type CameraScannerProps = {
 };
 
 export const CameraScanner = ({ selectedLanguage }: CameraScannerProps) => {
-  const { videoRef, isCameraOpen, openCamera, stopCamera, captureFrame } = useCamera();
+  const {
+    videoRef,
+    scanAreaRef,
+    isCameraOpen,
+    openCamera,
+    stopCamera,
+    captureFrame,
+  } = useCamera();
   const [isScanning, setIsScanning] = useState(false);
   const [detectedText, setDetectedText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
@@ -78,7 +85,10 @@ export const CameraScanner = ({ selectedLanguage }: CameraScannerProps) => {
         )}
 
         <div className="pointer-events-none absolute inset-0 grid place-items-center p-8">
-          <div className="h-36 w-full max-w-sm rounded-lg border-2 border-white/90 shadow-[0_0_0_999px_rgba(15,23,42,0.35)]" />
+          <div
+            ref={scanAreaRef}
+            className="h-44 w-full max-w-md rounded-lg border-2 border-white/90 shadow-[0_0_0_999px_rgba(15,23,42,0.35)]"
+          />
         </div>
       </div>
 
