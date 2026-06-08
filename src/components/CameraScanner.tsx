@@ -113,7 +113,7 @@ export const CameraScanner = ({ selectedLanguage }: CameraScannerProps) => {
         )}
       </div>
 
-      {isScanning && <Loading label="Scanning text and translating..." />}
+      {isScanning && <Loading label="Scanning text and loading translation model..." />}
 
       {errorMessage && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">

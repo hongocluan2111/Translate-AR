@@ -1,54 +1,52 @@
-const API_URL = import.meta.env.VITE_TRANSLATE_API_URL;
+type TranslationResult = Array<{
+  translation_text: string;
+}>;
 
-type TranslateResponse = {
-  translatedText?: string;
+type Translator = (
+  text: string,
+  options: {
+    src_lang: string;
+    tgt_lang: string;
+  },
+) => Promise<TranslationResult>;
+
+const NLLB_MODEL = 'Xenova/nllb-200-distilled-600M';
+
+const LANGUAGE_MAP: Record<string, string> = {
+  vi: 'vie_Latn',
+  en: 'eng_Latn',
+  ja: 'jpn_Jpan',
+  ko: 'kor_Hang',
+  zh: 'zho_Hans',
+  fr: 'fra_Latn',
+  de: 'deu_Latn',
 };
 
-const getTranslateEndpoint = () => {
-  if (!API_URL) {
-    throw new Error('VITE_TRANSLATE_API_URL is not configured');
-  }
+let translatorPromise: Promise<Translator> | null = null;
 
-  const normalizedUrl = API_URL.replace(/\/+$/, '');
-  return normalizedUrl.endsWith('/translate')
-    ? normalizedUrl
-    : `${normalizedUrl}/translate`;
+const getTranslator = () => {
+  translatorPromise ??= import('@huggingface/transformers').then(({ pipeline }) =>
+    pipeline('translation', NLLB_MODEL),
+  ) as Promise<Translator>;
+
+  return translatorPromise;
 };
 
 export const translateText = async (
   text: string,
   targetLanguage: string,
 ): Promise<string> => {
-  let response: Response;
+  const targetLanguageCode = LANGUAGE_MAP[targetLanguage] ?? LANGUAGE_MAP.vi;
+  const translator = await getTranslator();
+  const result = await translator(text, {
+    src_lang: 'eng_Latn',
+    tgt_lang: targetLanguageCode,
+  });
+  const translatedText = result[0]?.translation_text?.trim();
 
-  try {
-    response = await fetch(getTranslateEndpoint(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        q: text,
-        source: 'auto',
-        target: targetLanguage,
-        format: 'text',
-      }),
-    });
-  } catch {
-    throw new Error(
-      'Translate API is unreachable. Check VITE_TRANSLATE_API_URL and make sure LibreTranslate is running.',
-    );
+  if (!translatedText) {
+    throw new Error('Translation model did not return translated text.');
   }
 
-  if (!response.ok) {
-    throw new Error(`Translate failed with status ${response.status}`);
-  }
-
-  const data = (await response.json()) as TranslateResponse;
-
-  if (!data.translatedText) {
-    throw new Error('Translate response is missing translatedText');
-  }
-
-  return data.translatedText;
+  return translatedText;
 };
